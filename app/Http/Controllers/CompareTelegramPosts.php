@@ -4,12 +4,13 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Services\TelegramService;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+use App\Models\TelegramPost;
 
 class CompareTelegramPosts extends Command
 {
     protected $signature = 'telegram:compare';
-    protected $description = 'Compare posts from two Telegram channels';
+    protected $description = 'Fetch and store posts from two Telegram channels created today';
 
     protected $telegramService;
 
@@ -21,27 +22,49 @@ class CompareTelegramPosts extends Command
 
     public function handle()
     {
-        $channel1 = 'CHANNEL_USERNAME_1';
-        $channel2 = 'CHANNEL_USERNAME_2';
+        $channel1 = $this->ask('Enter the username of the first channel (e.g., @channel1):');
+        $channel2 = $this->ask('Enter the username of the second channel (e.g., @channel2):');
 
-        // Fetch posts
-        $posts1 = $this->telegramService->fetchChannelPosts($channel1);
-        $posts2 = $this->telegramService->fetchChannelPosts($channel2);
+        $today = now()->startOfDay();
+        $this->info("Fetching posts created today...");
 
-        // Compare posts
-        foreach ($posts1 as $post1) {
-            foreach ($posts2 as $post2) {
-                $similarity = $this->calculateSimilarity($post1['message'], $post2['message']);
-                if ($similarity >= 80) {
-                    $this->info("Similar Post Found:\n{$post1['message']}");
-                }
-            }
-        }
+        // Fetch posts for both channels
+        $posts1 = $this->fetchAndFilterPosts($channel1, $today);
+        $posts2 = $this->fetchAndFilterPosts($channel2, $today);
+
+        // Save posts to JSON
+        $allPosts = [
+            'channel_1' => $posts1,
+            'channel_2' => $posts2,
+        ];
+        Storage::put('telegram_posts.json', json_encode($allPosts, JSON_PRETTY_PRINT));
+        $this->info('Posts saved to telegram_posts.json.');
+
+        // Save posts to database
+        $this->saveToDatabase($posts1, $channel1);
+        $this->saveToDatabase($posts2, $channel2);
+
+        $this->info('Posts saved to the database.');
     }
 
-    private function calculateSimilarity($text1, $text2)
+    private function fetchAndFilterPosts($channel, $today)
     {
-        similar_text($text1, $text2, $percent);
-        return $percent;
+        $posts = $this->telegramService->fetchChannelPosts($channel);
+        return collect($posts)->filter(function ($post) use ($today) {
+            $postDate = isset($post['date']) ? \Carbon\Carbon::createFromTimestamp($post['date']) : null;
+            return $postDate && $postDate->greaterThanOrEqualTo($today);
+        })->toArray();
+    }
+
+    private function saveToDatabase($posts, $channel)
+    {
+        dd($posts);
+        foreach ($posts as $post) {
+            TelegramPost::create([
+                'channel' => $channel,
+                'message' => $post['message'] ?? '',
+                'posted_at' => \Carbon\Carbon::createFromTimestamp($post['date'] ?? time()),
+            ]);
+        }
     }
 }

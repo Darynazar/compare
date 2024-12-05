@@ -26,14 +26,15 @@ class CompareTelegramPosts extends Command
             $posts1 = $this->telegramService->fetchChannelPosts($channel1);
             $posts2 = $this->telegramService->fetchChannelPosts($channel2);
 
-            foreach ($posts1 as $post1) {
-                foreach ($posts2 as $post2) {
-                    $similarity = $this->calculateSimilarity($post1['message'], $post2['message']);
-                    if ($similarity >= 80) {
-                        $this->info("Similar Post Found:\n{$post1['message']}");
-                    }
-                }
-            }
+            dd($posts1);
+//            foreach ($posts1 as $post1) {
+//                foreach ($posts2 as $post2) {
+//                    $similarity = $this->calculateSimilarity($post1['message'], $post2['message']);
+//                    if ($similarity >= 80) {
+//                        $this->info("Similar Post Found:\n{$post1['message']}");
+//                    }
+//                }
+//            }
         } catch (\Exception $e) {
             $this->error($e->getMessage());
         }

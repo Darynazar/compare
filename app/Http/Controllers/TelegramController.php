@@ -15,8 +15,8 @@ class TelegramController extends Controller
 
     public function compareChannelsPosts()
     {
-        $channel1 = 'channel_username_1'; // Replace with actual channel username
-        $channel2 = 'channel_username_2'; // Replace with actual channel username
+        $channel1 = 't.me/Tasnimnews'; // Replace with actual channel username
+        $channel2 = 't.me/farsna'; // Replace with actual channel username
 
         // Fetch posts from both channels
         $posts1 = $this->madelineProtoService->getChannelPosts($channel1);

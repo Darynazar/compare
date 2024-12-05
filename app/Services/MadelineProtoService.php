@@ -11,7 +11,7 @@ class MadelineProtoService
     public function __construct()
     {
         // Initialize MadelineProto
-        $this->madelineProto = new API('session.madeline', ['ipcDisabled' => true]);
+        $this->madelineProto = new API('session.madeline');
 
 //        $this->madelineProto = new API('session.madeline');
         $this->madelineProto->start();

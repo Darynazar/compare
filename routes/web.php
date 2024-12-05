@@ -10,6 +10,6 @@ Route::get('/', function () {
 Route::post('/madeline-init', function () {
     return response()->json(['status' => 'MadelineProto initialized.']);
 });
-Route::get('/compare-posts', [TelegramController::class, 'compareChannelsPosts']);
+Route::post('/compare-posts', [TelegramController::class, 'compareChannelsPosts']);
 
 

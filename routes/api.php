@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\TelegramController;
+use App\Http\Controllers\API\TelegramController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 

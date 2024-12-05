@@ -2,73 +2,51 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
+use danog\MadelineProto\API;
+use danog\MadelineProto\Settings;
+use danog\MadelineProto\Settings\AppInfo;
 
 class TelegramService
 {
-    protected $apiId;
-    protected $apiHash;
-    protected $phoneNumber; // Your Telegram account phone number
-    protected $authFilePath = 'telegram_auth.json';
+    protected $madelineProto;
+    protected $authFilePath = 'telegram_auth_session.madeline';
 
     public function __construct()
     {
-        $this->apiId = env('TELEGRAM_API_ID');
-        $this->apiHash = env('TELEGRAM_API_HASH');
-        $this->phoneNumber = env('TELEGRAM_PHONE');
+        // Create settings for MadelineProto
+        $settings = new Settings([
+            'app_info' => new AppInfo([
+                'api_id' => (int) env('TELEGRAM_API_ID'),       // Your API ID
+                'api_hash' => env('TELEGRAM_API_HASH'),        // Your API Hash
+                'device_model' => 'PHP Application',          // Optional device info
+                'system_version' => '1.0.0',                  // Optional system info
+            ]),
+        ]);
+
+        // Instantiate MadelineProto with proper settings
+        $this->madelineProto = new API($this->authFilePath, $settings);
     }
 
-    // Authenticate and save session
     public function authenticate()
     {
-        $url = "https://api.telegram.org/auth/sendCode";
-        $response = Http::post($url, [
-            'api_id' => $this->apiId,
-            'api_hash' => $this->apiHash,
-            'phone_number' => $this->phoneNumber,
-        ]);
-
-        $result = $response->json();
-
-        if (isset($result['error'])) {
-            throw new \Exception("Authentication failed: " . $result['error_message']);
+        // Check if the session is authenticated
+        $authorizationState = $this->madelineProto->getSelf();
+        if (empty($authorizationState)) {
+            // If not logged in, log in
+            $this->madelineProto->phoneLogin(env('TELEGRAM_PHONE'));
+            $code = readline("Enter the code you received: ");
+            $this->madelineProto->completePhoneLogin($code);
         }
-
-        // Save session data for reuse
-        file_put_contents($this->authFilePath, json_encode($result));
-
-        return $result;
     }
 
-    // Get channel posts
     public function fetchChannelPosts($channelUsername, $limit = 50)
     {
-        $authData = $this->getAuthData();
+        $this->authenticate();
 
-        $url = "https://api.telegram.org/messages.getHistory";
-        $response = Http::post($url, [
+        // Get channel messages
+        return $this->madelineProto->messages->getHistory([
             'peer' => $channelUsername,
             'limit' => $limit,
-            'access_hash' => $authData['access_hash'],
-            'user_id' => $authData['user_id'],
-        ]);
-
-        $result = $response->json();
-
-        if (isset($result['error'])) {
-            throw new \Exception("Failed to fetch messages: " . $result['error_message']);
-        }
-
-        return $result['messages'] ?? [];
-    }
-
-    // Retrieve authentication data from file
-    protected function getAuthData()
-    {
-        if (!file_exists($this->authFilePath)) {
-            throw new \Exception("Authentication data not found. Please authenticate first.");
-        }
-
-        return json_decode(file_get_contents($this->authFilePath), true);
+        ])['messages'];
     }
 }

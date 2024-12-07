@@ -16,6 +16,7 @@ class CompareTelegramPosts extends Command
     {
         parent::__construct();
         $this->telegramService = $telegramService;
+        date_default_timezone_set('Asia/Tehran');
     }
 
     public function handle()

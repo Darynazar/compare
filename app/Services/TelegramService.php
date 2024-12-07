@@ -39,28 +39,43 @@ class TelegramService
         }
     }
 
-    public function fetchChannelPosts($channelUsername, $limit = 50)
+    public function fetchChannelPosts($channelUsername)
     {
         $this->authenticate();
 
-        // Get channel messages
+        // Get channel messages without a limit
         $messages = $this->madelineProto->messages->getHistory([
             'peer' => $channelUsername,
-            'limit' => $limit,
+            'limit' => 100, // You can set a higher limit if needed
         ])['messages'];
 
-        // Extract relevant fields
+        // Get today's date
+        $today = new \DateTime();
+        $today->setTime(0, 0, 0); // Set to the start of the day
+        $todayTimestamp = $today->getTimestamp();
+
+        // Create a DateTimeZone object for Iran
+        $iranTimezone = new \DateTimeZone('Asia/Tehran');
+
+        // Extract relevant fields and filter by today's date
         $posts = [];
         foreach ($messages as $message) {
             // Only process if the message has content
             if (isset($message['message'])) {
-                $posts[] = [
-                    'channel' => $channelUsername,
-                    'message' => $message['message'],
-                    'posted_at' => date('H:i:s', $message['date']), // Convert timestamp to time format
-                    'views' => $message['views'] ?? 0,
-                    'forwards' => $message['forwards'] ?? 0,
-                ];
+                $messageDate = new \DateTime();
+                $messageDate->setTimestamp($message['date']);
+                $messageDate->setTimezone($iranTimezone); // Set the timezone to Iran
+
+                // Check if the message was created today
+                if ($messageDate->getTimestamp() >= $todayTimestamp) {
+                    $posts[] = [
+                        'channel' => $channelUsername,
+                        'message' => $message['message'],
+                        'posted_at' => $messageDate->format('H:i:s'), // Convert timestamp to time format in Iran timezone
+                        'views' => $message['views'] ?? 0,
+                        'forwards' => $message['forwards'] ?? 0,
+                    ];
+                }
             }
         }
 

@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Services\TelegramService;
+use App\Models\TelegramPost;
 
 class CompareTelegramPosts extends Command
 {
@@ -20,23 +21,37 @@ class CompareTelegramPosts extends Command
     public function handle()
     {
         $channel1 = $this->ask('Enter the username of the first channel (e.g., @channel1)');
-        $channel2 = $this->ask('Enter the username of the second channel (e.g., @channel2)');
+       // $channel2 = $this->ask('Enter the username of the second channel (e.g., @channel2)');
 
         try {
+            // Fetch posts for both channels
             $posts1 = $this->telegramService->fetchChannelPosts($channel1);
-            $posts2 = $this->telegramService->fetchChannelPosts($channel2);
+          //  $posts2 = $this->telegramService->fetchChannelPosts($channel2);
 
-            dd($posts1);
-//            foreach ($posts1 as $post1) {
-//                foreach ($posts2 as $post2) {
-//                    $similarity = $this->calculateSimilarity($post1['message'], $post2['message']);
-//                    if ($similarity >= 80) {
-//                        $this->info("Similar Post Found:\n{$post1['message']}");
-//                    }
-//                }
-//            }
+            // Save posts in the database
+            $this->savePostsToDatabase($posts1);
+           // $this->savePostsToDatabase($posts2);
+
+            $this->info('Posts have been fetched and stored in the database.');
+
+            // Uncomment the similarity comparison logic if needed
+            // foreach ($posts1 as $post1) {
+            //     foreach ($posts2 as $post2) {
+            //         $similarity = $this->calculateSimilarity($post1['message'], $post2['message']);
+            //         if ($similarity >= 80) {
+            //             $this->info("Similar Post Found:\n{$post1['message']}");
+            //         }
+            //     }
+            // }
         } catch (\Exception $e) {
             $this->error($e->getMessage());
+        }
+    }
+
+    private function savePostsToDatabase($posts)
+    {
+        foreach ($posts as $post) {
+            TelegramPost::create($post);
         }
     }
 

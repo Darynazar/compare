@@ -58,7 +58,6 @@ class CompareTelegramPosts extends Command
 
     private function saveToDatabase($posts, $channel)
     {
-        dd($posts);
         foreach ($posts as $post) {
             TelegramPost::create([
                 'channel' => $channel,

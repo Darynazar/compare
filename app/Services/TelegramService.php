@@ -44,9 +44,26 @@ class TelegramService
         $this->authenticate();
 
         // Get channel messages
-        return $this->madelineProto->messages->getHistory([
+        $messages = $this->madelineProto->messages->getHistory([
             'peer' => $channelUsername,
             'limit' => $limit,
         ])['messages'];
+
+        // Extract relevant fields
+        $posts = [];
+        foreach ($messages as $message) {
+            // Only process if the message has content
+            if (isset($message['message'])) {
+                $posts[] = [
+                    'channel' => $channelUsername,
+                    'message' => $message['message'],
+                    'posted_at' => date('H:i:s', $message['date']), // Convert timestamp to time format
+                    'views' => $message['views'] ?? 0,
+                    'forwards' => $message['forwards'] ?? 0,
+                ];
+            }
+        }
+
+        return $posts;
     }
 }

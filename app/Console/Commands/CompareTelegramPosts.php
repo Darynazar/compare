@@ -12,28 +12,34 @@ class CompareTelegramPosts extends Command
     protected $description = 'Compare Telegram channel posts for similarity';
     protected $telegramService;
 
+    // Define static channel usernames as an array
+    protected $channels = [
+        '@Tasnimnews',
+        '@Farsna',
+        '@Isna94',
+    ];
+
     public function __construct(TelegramService $telegramService)
     {
         parent::__construct();
         $this->telegramService = $telegramService;
+
+        // Set the default timezone to Iran
         date_default_timezone_set('Asia/Tehran');
     }
 
     public function handle()
     {
-        $channel1 = $this->ask('Enter the username of the first channel (e.g., @channel1)');
-       // $channel2 = $this->ask('Enter the username of the second channel (e.g., @channel2)');
-
         try {
-            // Fetch posts for both channels
-            $posts1 = $this->telegramService->fetchChannelPosts($channel1);
-          //  $posts2 = $this->telegramService->fetchChannelPosts($channel2);
+            foreach ($this->channels as $channel) {
+                // Fetch posts for each channel
+                $posts = $this->telegramService->fetchChannelPosts($channel);
 
-            // Save posts in the database
-            $this->savePostsToDatabase($posts1);
-           // $this->savePostsToDatabase($posts2);
+                // Save posts in the database
+                $this->savePostsToDatabase($posts);
 
-            $this->info('Posts have been fetched and stored in the database.');
+                $this->info("Posts from {$channel} have been fetched and stored in the database.");
+            }
 
             // Uncomment the similarity comparison logic if needed
             // foreach ($posts1 as $post1) {
